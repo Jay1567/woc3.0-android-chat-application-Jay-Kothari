@@ -21,7 +21,14 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.firebase.auth.PhoneAuthProvider;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Login extends AppCompatActivity {
@@ -63,7 +70,7 @@ public class Login extends AppCompatActivity {
         mSendCode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startPhoneVerfication();
+                startPhoneVerification();
             }
         });
 
@@ -107,7 +114,29 @@ public class Login extends AppCompatActivity {
                 if(task.isSuccessful()){
                     //Login Complete redirect
                     FirebaseUser user = task.getResult().getUser();
-                    userIsLoggedIn(user);
+                    if(user != null){
+                        final DatabaseReference mDatabase;
+                        mDatabase = FirebaseDatabase.getInstance().getReference().child("user").child(user.getUid());
+                        mDatabase.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                if(!snapshot.exists()){
+                                    Map<String, Object> userMap = new HashMap<>();
+                                    userMap.put("phone", user.getPhoneNumber());
+                                    userMap.put("name", user.getPhoneNumber());
+                                    mDatabase.updateChildren(userMap);
+                                }
+                                userIsLoggedIn(user);
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+
+                            }
+                        });
+                    }
+
+//                    userIsLoggedIn(user);
                 } else {
                     if(task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
                         //Invalid Code
@@ -120,13 +149,13 @@ public class Login extends AppCompatActivity {
 
     private void userIsLoggedIn(FirebaseUser user) {
         if(user != null){
-            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+            startActivity(new Intent(getApplicationContext(), MainPageActivity.class));
             finish();
             return;
         }
     }
 
-    private void startPhoneVerfication(){
+    private void startPhoneVerification(){
         PhoneAuthOptions options =
                 PhoneAuthOptions.newBuilder(mAuth)
                         .setPhoneNumber(mPhoneNumber.getText().toString())       // Phone number to verify

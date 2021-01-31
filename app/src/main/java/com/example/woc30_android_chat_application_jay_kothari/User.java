@@ -1,6 +1,6 @@
 package com.example.woc30_android_chat_application_jay_kothari;
 
-public class User {
+public class  User {
     private String name, phone;
 
     public User(String name, String phone) {
